@@ -15,11 +15,41 @@ MVP мониторинга цен Ozon wishlist через VK-бота.
 - playwright-php/playwright
 - Docker Compose: `php`, `nginx`, `postgres`, `worker`, `scheduler`, optional `browser-login`
 
-## Запуск
+## Важное правило
+
+Проект запускается и обслуживается через Docker Compose. Не запускай `php artisan`, `composer`, тесты и Playwright на хосте.
+
+Правильно:
+
+```bash
+docker compose --env-file .env exec -T php php artisan test
+```
+
+Или через `make`:
+
+```bash
+make test
+```
+
+## Первый запуск
+
+Скопировать env:
 
 ```bash
 cp .env.example .env
-docker compose --env-file .env up -d --build
+```
+
+Собрать образы, поднять контейнеры, установить зависимости, опубликовать Filament assets и применить миграции:
+
+```bash
+make build
+```
+
+То же самое без `make`:
+
+```bash
+docker compose --env-file .env build php nginx
+docker compose --env-file .env up -d --no-build --remove-orphans
 docker compose --env-file .env exec -T php composer install -n
 docker compose --env-file .env exec -T php vendor/bin/playwright-install --browsers
 docker compose --env-file .env exec -T php php artisan key:generate --force
@@ -27,12 +57,58 @@ docker compose --env-file .env exec -T php php artisan filament:assets
 docker compose --env-file .env exec -T php php artisan migrate --force
 ```
 
-Приложение будет доступно на `http://127.0.0.1:8080`, админка Filament на `http://127.0.0.1:8080/admin`.
+После запуска:
 
-Создать первого администратора:
+- приложение: `http://127.0.0.1:8080`
+- Filament admin: `http://127.0.0.1:8080/admin/login`
+- noVNC для ручного логина в Ozon: `http://127.0.0.1:6080`
+
+## Обычный запуск
+
+Когда образы уже собраны:
 
 ```bash
-docker compose --env-file .env exec php php artisan make:filament-user --panel=admin
+make up
+```
+
+Или напрямую:
+
+```bash
+docker compose --env-file .env up -d --no-build
+```
+
+Проверить контейнеры:
+
+```bash
+make ps
+```
+
+Остановить:
+
+```bash
+make down
+```
+
+Не используй `docker compose down -v`, если не хочешь удалить PostgreSQL volume и сохраненный Ozon browser profile.
+
+## Создание администратора
+
+Создать пользователя для Filament:
+
+```bash
+make admin-create
+```
+
+Команда интерактивно спросит имя, email и пароль. Потом открыть:
+
+```text
+http://127.0.0.1:8080/admin/login
+```
+
+Если login page открылся без стилей, опубликовать assets:
+
+```bash
+make filament-assets
 ```
 
 ## Настройка VK
@@ -45,7 +121,15 @@ VK_GROUP_ID=
 VK_API_VERSION=5.199
 ```
 
-Запуск Long Poll listener:
+Получить `VK_BOT_TOKEN` нужно в настройках сообщества VK. Long Poll должен быть включен для группы.
+
+Запустить VK Long Poll listener:
+
+```bash
+make vk-listen
+```
+
+Или напрямую:
 
 ```bash
 docker compose --env-file .env exec php php artisan vk:listen
@@ -59,9 +143,11 @@ docker compose --env-file .env exec php php artisan vk:listen
 - `/items`
 - `/item ID`
 
-## Ozon browser profile
+## Авторизация аккаунта Ozon в браузере
 
-Crawler использует общий persistent profile:
+Crawler использует persistent browser profile. Это нужно, чтобы Playwright видел Ozon как уже авторизованный браузер.
+
+Профиль хранится в Docker volume `ozon_browser_profile`. Внутри контейнера путь такой:
 
 ```dotenv
 OZON_PROFILE_PATH=/var/www/ozon-prices/storage/app/ozon-browser-profile
@@ -69,13 +155,28 @@ PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 CHROME_PATH=/usr/bin/chromium
 ```
 
-Для ручного логина в Ozon:
+Запустить контейнер для ручного логина:
+
+```bash
+make browser-login
+```
+
+Или напрямую:
 
 ```bash
 docker compose --env-file .env --profile browser-login up browser-login
 ```
 
-Открыть noVNC: `http://127.0.0.1:6080`, зайти в Ozon вручную и оставить профиль сохраненным. Worker и ручной browser-login используют один Docker volume `ozon_browser_profile`.
+Дальше:
+
+1. Открыть `http://127.0.0.1:6080`.
+2. В noVNC нажать connect, если экран не подключился автоматически.
+3. В открывшемся Chromium зайти на `https://www.ozon.ru`.
+4. Авторизоваться в своем Ozon аккаунте.
+5. Открыть wishlist вручную и убедиться, что товары видны.
+6. Остановить `browser-login` через `Ctrl+C`.
+
+После этого `worker` будет использовать тот же browser profile при обходе wishlist. Если Ozon разлогинит аккаунт или начнет показывать captcha, повторить ручной login flow.
 
 ## Очередь и расписание
 
@@ -95,6 +196,50 @@ CRAWL_INTERVAL_HOURS=6
 ```bash
 docker compose --env-file .env exec -T php php artisan wishlists:dispatch-due
 ```
+
+Посмотреть логи:
+
+```bash
+docker compose --env-file .env logs -f worker
+docker compose --env-file .env logs -f scheduler
+```
+
+## Как проверить весь flow
+
+1. Поднять проект:
+
+```bash
+make up
+```
+
+2. Проверить админку:
+
+```text
+http://127.0.0.1:8080/admin/login
+```
+
+3. Авторизовать Ozon profile через `make browser-login`.
+
+4. Настроить VK token/group id в `.env`.
+
+5. Запустить listener:
+
+```bash
+make vk-listen
+```
+
+6. Написать боту ссылку на Ozon wishlist.
+
+7. Проверить в Filament:
+
+- `Users`
+- `Wishlists`
+- `Products`
+- `Price Snapshots`
+- `Alerts`
+- `Crawl Runs`
+
+Первый обход создает baseline без алертов. Алерт появится только если следующая цена будет новым историческим минимумом.
 
 ## Архитектура
 
@@ -120,21 +265,42 @@ docker compose --env-file .env exec -T php php artisan wishlists:dispatch-due
 ## Проверки
 
 ```bash
+make test
+make pint
+```
+
+Или напрямую:
+
+```bash
 docker compose --env-file .env exec -T php php artisan test
 docker compose --env-file .env exec -T php vendor/bin/pint --test
 ```
 
-Если Filament login открылся без стилей, значит не опубликованы assets:
+Проверить HTTP:
 
 ```bash
-docker compose --env-file .env exec -T php php artisan filament:assets
+curl --max-time 5 -I http://127.0.0.1:8080
+curl --max-time 5 -I http://127.0.0.1:8080/admin/login
+curl --max-time 5 -I http://127.0.0.1:8080/css/filament/filament/app.css
 ```
 
 ## Полезные команды
 
 ```bash
-docker compose --env-file .env ps
-docker compose --env-file .env logs -f worker
-docker compose --env-file .env logs -f scheduler
+make help
+make ps
+make bash
+make migrate
+make test
+make pint
+make filament-assets
+make admin-create
+make browser-login
+make vk-listen
+```
+
+Войти в PHP container:
+
+```bash
 docker compose --env-file .env exec php bash
 ```
