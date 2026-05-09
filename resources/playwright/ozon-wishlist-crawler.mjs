@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, rm } from 'node:fs/promises';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('../../vendor/playwright-php/playwright/bin/node_modules/playwright');
@@ -19,6 +19,9 @@ if (!profilePath) {
 }
 
 await mkdir(profilePath, { recursive: true });
+await Promise.all(['SingletonLock', 'SingletonSocket', 'SingletonCookie'].map((file) => (
+  rm(`${profilePath}/${file}`, { force: true })
+)));
 
 const context = await chromium.launchPersistentContext(profilePath, {
   headless,

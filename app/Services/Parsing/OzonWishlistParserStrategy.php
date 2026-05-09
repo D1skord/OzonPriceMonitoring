@@ -35,7 +35,7 @@ final class OzonWishlistParserStrategy implements MarketplaceWishlistParserStrat
         $path = parse_url($url, PHP_URL_PATH) ?: '';
 
         return (bool) preg_match('/(^|\.)ozon\.ru$/i', $host)
-            && (bool) preg_match('~^/my/favorites/?$~i', $path);
+            && (bool) preg_match('~^(?:/my/favorites/?|/t/[A-Za-z0-9_-]+/?)$~i', $path);
     }
 
     public function parse(string $html, string $sourceUrl): array

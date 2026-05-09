@@ -43,7 +43,7 @@ return [
     ],
 
     'crawl' => [
-        'interval_hours' => env('CRAWL_INTERVAL_HOURS', 6),
+        'interval_minutes' => env('CRAWL_INTERVAL_MINUTES', 15),
     ],
 
     'ozon' => [

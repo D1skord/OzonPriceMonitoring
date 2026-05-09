@@ -25,10 +25,13 @@ final class VkBotMessageHandlerTest extends TestCase
     {
         Bus::fake();
 
-        $message = app(VkBotMessageHandler::class)->handle(10, 20, 'https://www.ozon.ru/my/favorites');
+        $message = app(VkBotMessageHandler::class)->handle(10, 20, 'https://ozon.ru/t/1EMSVNf');
 
         $this->assertStringContainsString('Wishlist привязан', $message);
-        $this->assertDatabaseHas('wishlists', ['is_active' => true]);
+        $this->assertDatabaseHas('wishlists', [
+            'url' => 'https://ozon.ru/t/1EMSVNf',
+            'is_active' => true,
+        ]);
         Bus::assertDispatched(CrawlWishlistJob::class);
     }
 

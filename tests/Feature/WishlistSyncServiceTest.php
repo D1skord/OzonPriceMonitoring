@@ -18,13 +18,18 @@ final class WishlistSyncServiceTest extends TestCase
         $user = User::factory()->create();
         $service = app(WishlistSyncService::class);
         $wishlist = $service->bindWishlist($user, 'https://www.ozon.ru/my/favorites');
+        $capturedAt = now();
 
-        $result = $service->syncParsedItems($wishlist, [$this->item(499000)], now());
+        $result = $service->syncParsedItems($wishlist, [$this->item(499000)], $capturedAt);
 
         $this->assertSame(1, $result->productsFound);
         $this->assertSame(0, $result->alertsCreated);
         $this->assertDatabaseCount('price_snapshots', 1);
         $this->assertDatabaseCount('alerts', 0);
+        $this->assertSame(
+            $capturedAt->copy()->addMinutes(15)->toDateTimeString(),
+            $wishlist->refresh()->next_crawl_at->toDateTimeString(),
+        );
     }
 
     public function test_new_historical_min_creates_alert_after_baseline(): void
@@ -40,6 +45,16 @@ final class WishlistSyncServiceTest extends TestCase
         $this->assertSame(1, $result->alertsCreated);
         $this->assertDatabaseCount('alerts', 1);
         $this->assertSame(399000, Alert::first()->new_price_minor);
+    }
+
+    public function test_bind_wishlist_stores_shared_ozon_link(): void
+    {
+        $user = User::factory()->create();
+        $wishlist = app(WishlistSyncService::class)->bindWishlist($user, 'https://ozon.ru/t/1EMSVNf?utm_source=vk');
+
+        $this->assertSame('https://ozon.ru/t/1EMSVNf?utm_source=vk', $wishlist->url);
+        $this->assertSame('https://ozon.ru/t/1EMSVNf', $wishlist->normalized_url);
+        $this->assertTrue($wishlist->is_active);
     }
 
     private function item(int $price): ParsedWishlistItem

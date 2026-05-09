@@ -10,6 +10,9 @@ PHP_SERVICE=php
 EXEC=$(COMPOSE) exec -T $(PHP_SERVICE)
 EXEC_TTY=$(COMPOSE) exec $(PHP_SERVICE)
 ARTISAN=$(EXEC) php artisan
+HOST_UID=$(shell id -u)
+HOST_GID=$(shell id -g)
+OZON_PROFILE_PATH=/var/www/ozon-prices/storage/app/ozon-browser-profile
 
 HELP_FUN = \
 	%help; \
@@ -74,5 +77,8 @@ schedule: env-init ##@commands Run scheduler
 vk-listen: env-init ##@commands Run VK Long Poll listener
 	$(ARTISAN) vk:listen
 
-browser-login: env-init ##@commands Start noVNC browser for manual Ozon login
+browser-profile-perms: env-init
+	$(COMPOSE) run --rm --user root --no-deps $(PHP_SERVICE) sh -lc 'mkdir -p "$(OZON_PROFILE_PATH)" && chown -R $(HOST_UID):$(HOST_GID) "$(OZON_PROFILE_PATH)"'
+
+browser-login: env-init browser-profile-perms ##@commands Start noVNC browser for manual Ozon login
 	$(COMPOSE) --profile browser-login up browser-login

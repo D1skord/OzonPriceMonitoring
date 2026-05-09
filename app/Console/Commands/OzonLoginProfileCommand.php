@@ -20,6 +20,14 @@ final class OzonLoginProfileCommand extends Command
             mkdir($profilePath, 0775, true);
         }
 
+        foreach (['SingletonLock', 'SingletonSocket', 'SingletonCookie'] as $lockFile) {
+            $path = $profilePath.DIRECTORY_SEPARATOR.$lockFile;
+
+            if (is_link($path) || is_file($path)) {
+                unlink($path);
+            }
+        }
+
         $this->info('Open noVNC and log in to Ozon. Stop this command after login is complete.');
 
         $process = new Process([

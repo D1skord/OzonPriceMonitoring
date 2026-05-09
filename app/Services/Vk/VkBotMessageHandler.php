@@ -31,7 +31,7 @@ final class VkBotMessageHandler
         $lower = mb_strtolower($text);
 
         if (in_array($lower, ['/start', 'start', 'начать'], true)) {
-            return 'Пришли ссылку на Ozon wishlist. Я буду проверять цены раз в 6 часов и писать, когда товар обновит исторический минимум.';
+            return 'Пришли ссылку на Ozon wishlist. Я буду проверять цены каждые 15 минут и писать, когда товар обновит исторический минимум.';
         }
 
         if (in_array($lower, ['/help', 'help', 'помощь'], true)) {
@@ -125,7 +125,7 @@ final class VkBotMessageHandler
         $host = parse_url($url, PHP_URL_HOST) ?: '';
         $path = parse_url($url, PHP_URL_PATH) ?: '';
 
-        if (preg_match('/(^|\.)ozon\.ru$/i', $host) && preg_match('~^/my/favorites/?$~i', $path)) {
+        if (preg_match('/(^|\.)ozon\.ru$/i', $host) && preg_match('~^(?:/my/favorites/?|/t/[A-Za-z0-9_-]+/?)$~i', $path)) {
             return $url;
         }
 

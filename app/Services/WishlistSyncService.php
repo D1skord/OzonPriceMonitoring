@@ -119,7 +119,7 @@ final class WishlistSyncService
             $wishlist->update([
                 'baseline_crawled_at' => $wishlist->baseline_crawled_at ?? $capturedAt,
                 'last_crawled_at' => $capturedAt,
-                'next_crawl_at' => $capturedAt->copy()->addHours((int) config('services.crawl.interval_hours', 6)),
+                'next_crawl_at' => $capturedAt->copy()->addMinutes((int) config('services.crawl.interval_minutes', 15)),
             ]);
 
             return new WishlistSyncResult(

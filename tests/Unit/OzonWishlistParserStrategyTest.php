@@ -33,5 +33,6 @@ final class OzonWishlistParserStrategyTest extends TestCase
         $registry = new MarketplaceWishlistParserRegistry([$strategy]);
 
         $this->assertSame($strategy, $registry->forUrl('https://www.ozon.ru/my/favorites'));
+        $this->assertSame($strategy, $registry->forUrl('https://ozon.ru/t/1EMSVNf'));
     }
 }

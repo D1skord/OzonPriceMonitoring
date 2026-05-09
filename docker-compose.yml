@@ -95,6 +95,8 @@ services:
             - browser-login
         ports:
             - "${NOVNC_HOST:-127.0.0.1}:${NOVNC_PORT:-6080}:6080"
+        tmpfs:
+            - /tmp/.X11-unix:mode=1777
         environment:
             DISPLAY: :99
             CHROME_PATH: ${CHROME_PATH:-/usr/bin/chromium}

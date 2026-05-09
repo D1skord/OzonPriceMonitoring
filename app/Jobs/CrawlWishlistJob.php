@@ -25,7 +25,7 @@ final class CrawlWishlistJob implements ShouldQueue
 
     public function middleware(): array
     {
-        return [(new WithoutOverlapping('wishlist-'.$this->wishlistId))->expireAfter(900)];
+        return [(new WithoutOverlapping('ozon-browser-profile'))->expireAfter(900)];
     }
 
     public function handle(
