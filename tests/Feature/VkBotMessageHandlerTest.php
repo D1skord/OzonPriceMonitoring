@@ -39,7 +39,7 @@ final class VkBotMessageHandlerTest extends TestCase
     {
         User::factory()->create(['vk_user_id' => 10, 'vk_peer_id' => 20]);
 
-        $message = app(VkBotMessageHandler::class)->handle(10, 20, '/items');
+        $message = app(VkBotMessageHandler::class)->handle(10, 20, 'Мои товары');
 
         $this->assertStringContainsString('Активных товаров пока нет', $message);
     }

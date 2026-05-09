@@ -37,14 +37,14 @@ final class VkBotMessageHandler
         if (in_array($lower, ['/help', 'help', 'помощь'], true)) {
             return implode("\n", [
                 'Команды:',
-                '/help - помощь',
-                '/items - список твоих товаров',
+                'Помощь - помощь',
+                'Мои товары - список твоих товаров',
                 '/item ID - краткая статистика товара',
                 'или пришли ссылку на Ozon wishlist.',
             ]);
         }
 
-        if ($lower === '/items') {
+        if (in_array($lower, ['/items', 'мои товары'], true)) {
             return $this->itemsMessage($user);
         }
 

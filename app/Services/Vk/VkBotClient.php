@@ -13,6 +13,7 @@ final class VkBotClient
         $response = $this->client()->post('messages.send', [
             'peer_id' => $peerId,
             'message' => $message,
+            'keyboard' => json_encode($this->keyboard(), JSON_UNESCAPED_UNICODE),
             'random_id' => random_int(1, PHP_INT_MAX),
         ])->json();
 
@@ -61,5 +62,37 @@ final class VkBotClient
                 'access_token' => config('services.vk.bot_token'),
                 'v' => config('services.vk.api_version', '5.199'),
             ]]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function keyboard(): array
+    {
+        return [
+            'one_time' => false,
+            'inline' => false,
+            'buttons' => [
+                [
+                    $this->textButton('Мои товары', 'primary'),
+                    $this->textButton('Помощь', 'secondary'),
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function textButton(string $label, string $color): array
+    {
+        return [
+            'action' => [
+                'type' => 'text',
+                'label' => $label,
+                'payload' => json_encode(['command' => $label], JSON_UNESCAPED_UNICODE),
+            ],
+            'color' => $color,
+        ];
     }
 }
