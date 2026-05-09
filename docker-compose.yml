@@ -1,0 +1,117 @@
+services:
+    nginx:
+        image: ozonprices-nginx
+        build:
+            context: ./docker/nginx
+        ports:
+            - "${NGINX_HOST:-127.0.0.1}:${NGINX_PORT:-8080}:80"
+        volumes:
+            - ./:/var/www/ozon-prices
+        environment:
+            DOMAIN_NAME: ${DOMAIN_NAME:-ozon-prices.local}
+        depends_on:
+            - php
+        networks:
+            - ozon_prices_net
+
+    php:
+        image: ozonprices-php
+        build:
+            context: .
+            dockerfile: docker/php/Dockerfile
+            args:
+                TIMEZONE: ${TIMEZONE:-Europe/Moscow}
+                UID: ${UID:-1000}
+                GID: ${GID:-1000}
+        user: "${UID:-1000}:${GID:-1000}"
+        environment:
+            CHROME_PATH: ${CHROME_PATH:-/usr/bin/chromium}
+            PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+        volumes:
+            - ./:/var/www/ozon-prices
+            - ozon_browser_profile:${OZON_PROFILE_PATH:-/var/www/ozon-prices/storage/app/ozon-browser-profile}
+        depends_on:
+            postgres:
+                condition: service_healthy
+        networks:
+            - ozon_prices_net
+
+    postgres:
+        image: postgres:${POSTGRES_VERSION:-18-alpine}
+        ports:
+            - "${POSTGRES_HOST:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"
+        environment:
+            POSTGRES_USER: ${POSTGRES_USER:-app}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+            POSTGRES_DB: ${POSTGRES_DB:-ozon_prices}
+        volumes:
+            - postgres18_data:/var/lib/postgresql
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-app} -d $${POSTGRES_DB:-ozon_prices}"]
+            interval: 5s
+            timeout: 5s
+            retries: 10
+            start_period: 10s
+        networks:
+            - ozon_prices_net
+
+    worker:
+        image: ozonprices-php
+        user: "${UID:-1000}:${GID:-1000}"
+        command: php artisan queue:work database --queue=default --sleep=3 --tries=1 --timeout=600
+        environment:
+            CHROME_PATH: ${CHROME_PATH:-/usr/bin/chromium}
+            PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+        stop_signal: SIGTERM
+        volumes:
+            - ./:/var/www/ozon-prices
+            - ozon_browser_profile:${OZON_PROFILE_PATH:-/var/www/ozon-prices/storage/app/ozon-browser-profile}
+        depends_on:
+            postgres:
+                condition: service_healthy
+        networks:
+            - ozon_prices_net
+
+    scheduler:
+        image: ozonprices-php
+        user: "${UID:-1000}:${GID:-1000}"
+        command: php artisan schedule:work
+        environment:
+            CHROME_PATH: ${CHROME_PATH:-/usr/bin/chromium}
+            PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+        volumes:
+            - ./:/var/www/ozon-prices
+        depends_on:
+            postgres:
+                condition: service_healthy
+        networks:
+            - ozon_prices_net
+
+    browser-login:
+        image: ozonprices-php
+        user: "${UID:-1000}:${GID:-1000}"
+        command: bash docker/browser-login/start.sh
+        profiles:
+            - browser-login
+        ports:
+            - "${NOVNC_HOST:-127.0.0.1}:${NOVNC_PORT:-6080}:6080"
+        environment:
+            DISPLAY: :99
+            CHROME_PATH: ${CHROME_PATH:-/usr/bin/chromium}
+            PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+            OZONE_PLATFORM: x11
+        volumes:
+            - ./:/var/www/ozon-prices
+            - ozon_browser_profile:${OZON_PROFILE_PATH:-/var/www/ozon-prices/storage/app/ozon-browser-profile}
+        depends_on:
+            postgres:
+                condition: service_healthy
+        networks:
+            - ozon_prices_net
+
+volumes:
+    postgres18_data:
+    ozon_browser_profile:
+
+networks:
+    ozon_prices_net:
