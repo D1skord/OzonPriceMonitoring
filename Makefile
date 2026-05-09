@@ -62,6 +62,9 @@ pint: env-init ##@test Check code style
 filament-assets: env-init ##@laravel Publish Filament assets
 	$(ARTISAN) filament:assets
 
+admin-create: env-init ##@commands Create Filament admin user
+	$(EXEC_TTY) php artisan admin:create
+
 queue: env-init ##@commands Run queue worker
 	$(ARTISAN) queue:work database --queue=default --sleep=3 --tries=1 --timeout=600
 
