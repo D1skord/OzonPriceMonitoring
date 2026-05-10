@@ -155,13 +155,17 @@ jobs:
             git remote set-url origin https://github.com/$REPOSITORY.git
             git fetch origin main
             git reset --hard origin/main
-            if docker compose version >/dev/null 2>&1; then
+            APP_UID=\$(awk -F= '\$1 == \"UID\" { print \$2 }' .env)
+            APP_GID=\$(awk -F= '\$1 == \"GID\" { print \$2 }' .env)
+            chown -R \"\$APP_UID:\$APP_GID\" .
+            if docker compose version >/dev/null 2>&1 && docker compose --help 2>/dev/null | grep -q -- '--env-file'; then
               COMPOSE='docker compose --env-file .env -p ozonprices_prod -f docker-compose.prod.yml'
             else
               COMPOSE='docker-compose --env-file .env -p ozonprices_prod -f docker-compose.prod.yml'
             fi
             \$COMPOSE build php nginx
             \$COMPOSE up -d --no-build --remove-orphans
+            \$COMPOSE exec -T php git config --global --add safe.directory /var/www/ozon-prices
             \$COMPOSE exec -T php composer install -n --no-dev --optimize-autoloader
             \$COMPOSE exec -T php php artisan filament:assets
             \$COMPOSE exec -T php php artisan migrate --force
