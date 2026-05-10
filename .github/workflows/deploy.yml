@@ -66,7 +66,7 @@ jobs:
         run: |
           umask 077
           {
-            printf 'APP_NAME=%s\n' "$APP_NAME"
+            printf 'APP_NAME="%s"\n' "$APP_NAME"
             printf 'APP_ENV=%s\n' "$APP_ENV"
             printf 'APP_KEY=%s\n' "$APP_KEY"
             printf 'APP_DEBUG=%s\n' "$APP_DEBUG"
@@ -95,7 +95,7 @@ jobs:
             printf 'QUEUE_CONNECTION=%s\n' "$QUEUE_CONNECTION"
             printf 'CACHE_STORE=%s\n' "$CACHE_STORE"
             printf 'MAIL_MAILER=%s\n' "$MAIL_MAILER"
-            printf 'VITE_APP_NAME=%s\n' "$VITE_APP_NAME"
+            printf 'VITE_APP_NAME="%s"\n' "$VITE_APP_NAME"
             printf 'UID=%s\n' "$APP_UID"
             printf 'GID=%s\n' "$APP_GID"
             printf 'TIMEZONE=%s\n' "$TIMEZONE"
