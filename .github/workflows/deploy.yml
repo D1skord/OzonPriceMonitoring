@@ -143,6 +143,15 @@ jobs:
           sshpass -p "$VDS_PASSWORD" ssh -p "$VDS_PORT" $SSH_OPTS "$VDS_USER@$VDS_HOST" "
             set -e
             cd '$PROD_DIR'
+            if [ ! -d .git ]; then
+              if [ -n \"\$(find . -mindepth 1 -maxdepth 1 ! -name .env -print -quit)\" ]; then
+                BACKUP_DIR=\"\$(dirname '$PROD_DIR')/\$(basename '$PROD_DIR').deploy-initial-backup-\$(date +%Y%m%d%H%M%S)\"
+                mkdir \"\$BACKUP_DIR\"
+                find . -mindepth 1 -maxdepth 1 ! -name .env -exec mv {} \"\$BACKUP_DIR\" \;
+              fi
+              git init
+              git remote add origin https://github.com/$REPOSITORY.git
+            fi
             git remote set-url origin https://github.com/$REPOSITORY.git
             git fetch origin main
             git reset --hard origin/main
