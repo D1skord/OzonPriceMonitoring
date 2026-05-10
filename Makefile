@@ -69,6 +69,7 @@ test-down: test-env-init ##@test Stop test containers
 	$(TEST_COMPOSE) down
 
 test-composer-install: test-up ##@test Install dependencies in test container
+	$(TEST_EXEC) git config --global --add safe.directory /var/www/ozon-prices
 	$(TEST_EXEC) composer install -n
 
 test-migrate: test-composer-install ##@test Run test migrations

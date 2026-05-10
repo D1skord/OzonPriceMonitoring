@@ -18,6 +18,14 @@ jobs:
         run: |
           cp .env.example .env
           cp .env.test.example .env.test
+          {
+            echo "UID=$(id -u)"
+            echo "GID=$(id -g)"
+          } >> .env
+          {
+            echo "UID=$(id -u)"
+            echo "GID=$(id -g)"
+          } >> .env.test
 
       - name: Run tests
         run: make test
