@@ -42,8 +42,6 @@ services:
 
     postgres:
         image: postgres:${POSTGRES_VERSION}
-        ports:
-            - "${POSTGRES_HOST}:${POSTGRES_PORT}:5432"
         environment:
             POSTGRES_USER: ${POSTGRES_USER}
             POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
