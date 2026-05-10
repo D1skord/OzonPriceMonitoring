@@ -1,0 +1,162 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install SSH password client
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Create production env file
+        env:
+          APP_NAME: ${{ secrets.APP_NAME }}
+          APP_ENV: ${{ secrets.APP_ENV }}
+          APP_KEY: ${{ secrets.APP_KEY }}
+          APP_DEBUG: ${{ secrets.APP_DEBUG }}
+          APP_URL: ${{ secrets.APP_URL }}
+          APP_TIMEZONE: ${{ secrets.APP_TIMEZONE }}
+          APP_LOCALE: ${{ secrets.APP_LOCALE }}
+          APP_FALLBACK_LOCALE: ${{ secrets.APP_FALLBACK_LOCALE }}
+          APP_FAKER_LOCALE: ${{ secrets.APP_FAKER_LOCALE }}
+          LOG_CHANNEL: ${{ secrets.LOG_CHANNEL }}
+          LOG_STACK: ${{ secrets.LOG_STACK }}
+          LOG_LEVEL: ${{ secrets.LOG_LEVEL }}
+          DB_CONNECTION: ${{ secrets.DB_CONNECTION }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_DATABASE: ${{ secrets.DB_DATABASE }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_SSLMODE: ${{ secrets.DB_SSLMODE }}
+          SESSION_DRIVER: ${{ secrets.SESSION_DRIVER }}
+          SESSION_LIFETIME: ${{ secrets.SESSION_LIFETIME }}
+          SESSION_ENCRYPT: ${{ secrets.SESSION_ENCRYPT }}
+          SESSION_PATH: ${{ secrets.SESSION_PATH }}
+          SESSION_DOMAIN: ${{ secrets.SESSION_DOMAIN }}
+          BROADCAST_CONNECTION: ${{ secrets.BROADCAST_CONNECTION }}
+          FILESYSTEM_DISK: ${{ secrets.FILESYSTEM_DISK }}
+          QUEUE_CONNECTION: ${{ secrets.QUEUE_CONNECTION }}
+          CACHE_STORE: ${{ secrets.CACHE_STORE }}
+          MAIL_MAILER: ${{ secrets.MAIL_MAILER }}
+          VITE_APP_NAME: ${{ secrets.VITE_APP_NAME }}
+          APP_UID: ${{ secrets.UID }}
+          APP_GID: ${{ secrets.GID }}
+          TIMEZONE: ${{ secrets.TIMEZONE }}
+          DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+          NGINX_HOST: ${{ secrets.NGINX_HOST }}
+          NGINX_PORT: ${{ secrets.NGINX_PORT }}
+          POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
+          POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
+          POSTGRES_VERSION: ${{ secrets.POSTGRES_VERSION }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          VK_BOT_TOKEN: ${{ secrets.VK_BOT_TOKEN }}
+          VK_GROUP_ID: ${{ secrets.VK_GROUP_ID }}
+          VK_API_VERSION: ${{ secrets.VK_API_VERSION }}
+          VK_LONG_POLL_WAIT: ${{ secrets.VK_LONG_POLL_WAIT }}
+          CRAWL_INTERVAL_MINUTES: ${{ secrets.CRAWL_INTERVAL_MINUTES }}
+          OZON_PROFILE_PATH: ${{ secrets.OZON_PROFILE_PATH }}
+          CHROME_PATH: ${{ secrets.CHROME_PATH }}
+          PLAYWRIGHT_BROWSERS_PATH: ${{ secrets.PLAYWRIGHT_BROWSERS_PATH }}
+        run: |
+          umask 077
+          {
+            printf 'APP_NAME=%s\n' "$APP_NAME"
+            printf 'APP_ENV=%s\n' "$APP_ENV"
+            printf 'APP_KEY=%s\n' "$APP_KEY"
+            printf 'APP_DEBUG=%s\n' "$APP_DEBUG"
+            printf 'APP_URL=%s\n' "$APP_URL"
+            printf 'APP_TIMEZONE=%s\n' "$APP_TIMEZONE"
+            printf 'APP_LOCALE=%s\n' "$APP_LOCALE"
+            printf 'APP_FALLBACK_LOCALE=%s\n' "$APP_FALLBACK_LOCALE"
+            printf 'APP_FAKER_LOCALE=%s\n' "$APP_FAKER_LOCALE"
+            printf 'LOG_CHANNEL=%s\n' "$LOG_CHANNEL"
+            printf 'LOG_STACK=%s\n' "$LOG_STACK"
+            printf 'LOG_LEVEL=%s\n' "$LOG_LEVEL"
+            printf 'DB_CONNECTION=%s\n' "$DB_CONNECTION"
+            printf 'DB_HOST=%s\n' "$DB_HOST"
+            printf 'DB_PORT=%s\n' "$DB_PORT"
+            printf 'DB_DATABASE=%s\n' "$DB_DATABASE"
+            printf 'DB_USERNAME=%s\n' "$DB_USERNAME"
+            printf 'DB_PASSWORD=%s\n' "$DB_PASSWORD"
+            printf 'DB_SSLMODE=%s\n' "$DB_SSLMODE"
+            printf 'SESSION_DRIVER=%s\n' "$SESSION_DRIVER"
+            printf 'SESSION_LIFETIME=%s\n' "$SESSION_LIFETIME"
+            printf 'SESSION_ENCRYPT=%s\n' "$SESSION_ENCRYPT"
+            printf 'SESSION_PATH=%s\n' "$SESSION_PATH"
+            printf 'SESSION_DOMAIN=%s\n' "$SESSION_DOMAIN"
+            printf 'BROADCAST_CONNECTION=%s\n' "$BROADCAST_CONNECTION"
+            printf 'FILESYSTEM_DISK=%s\n' "$FILESYSTEM_DISK"
+            printf 'QUEUE_CONNECTION=%s\n' "$QUEUE_CONNECTION"
+            printf 'CACHE_STORE=%s\n' "$CACHE_STORE"
+            printf 'MAIL_MAILER=%s\n' "$MAIL_MAILER"
+            printf 'VITE_APP_NAME=%s\n' "$VITE_APP_NAME"
+            printf 'UID=%s\n' "$APP_UID"
+            printf 'GID=%s\n' "$APP_GID"
+            printf 'TIMEZONE=%s\n' "$TIMEZONE"
+            printf 'DOMAIN_NAME=%s\n' "$DOMAIN_NAME"
+            printf 'NGINX_HOST=%s\n' "$NGINX_HOST"
+            printf 'NGINX_PORT=%s\n' "$NGINX_PORT"
+            printf 'POSTGRES_HOST=%s\n' "$POSTGRES_HOST"
+            printf 'POSTGRES_PORT=%s\n' "$POSTGRES_PORT"
+            printf 'POSTGRES_VERSION=%s\n' "$POSTGRES_VERSION"
+            printf 'POSTGRES_USER=%s\n' "$POSTGRES_USER"
+            printf 'POSTGRES_PASSWORD=%s\n' "$POSTGRES_PASSWORD"
+            printf 'POSTGRES_DB=%s\n' "$POSTGRES_DB"
+            printf 'VK_BOT_TOKEN=%s\n' "$VK_BOT_TOKEN"
+            printf 'VK_GROUP_ID=%s\n' "$VK_GROUP_ID"
+            printf 'VK_API_VERSION=%s\n' "$VK_API_VERSION"
+            printf 'VK_LONG_POLL_WAIT=%s\n' "$VK_LONG_POLL_WAIT"
+            printf 'CRAWL_INTERVAL_MINUTES=%s\n' "$CRAWL_INTERVAL_MINUTES"
+            printf 'OZON_PROFILE_PATH=%s\n' "$OZON_PROFILE_PATH"
+            printf 'CHROME_PATH=%s\n' "$CHROME_PATH"
+            printf 'PLAYWRIGHT_BROWSERS_PATH=%s\n' "$PLAYWRIGHT_BROWSERS_PATH"
+          } > .deploy.env
+
+      - name: Upload production env file
+        env:
+          VDS_HOST: ${{ secrets.VDS_HOST }}
+          VDS_USER: ${{ secrets.VDS_USER }}
+          VDS_PORT: ${{ secrets.VDS_PORT }}
+          VDS_PASSWORD: ${{ secrets.VDS_PASSWORD }}
+          PROD_DIR: ${{ secrets.PROD_DIR }}
+        run: |
+          SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o GlobalKnownHostsFile=/dev/null"
+          sshpass -p "$VDS_PASSWORD" ssh -p "$VDS_PORT" $SSH_OPTS "$VDS_USER@$VDS_HOST" "mkdir -p '$PROD_DIR'"
+          sshpass -p "$VDS_PASSWORD" scp -P "$VDS_PORT" $SSH_OPTS .deploy.env "$VDS_USER@$VDS_HOST:$PROD_DIR/.env"
+
+      - name: Deploy on VDS
+        env:
+          VDS_HOST: ${{ secrets.VDS_HOST }}
+          VDS_USER: ${{ secrets.VDS_USER }}
+          VDS_PORT: ${{ secrets.VDS_PORT }}
+          VDS_PASSWORD: ${{ secrets.VDS_PASSWORD }}
+          PROD_DIR: ${{ secrets.PROD_DIR }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o GlobalKnownHostsFile=/dev/null"
+          sshpass -p "$VDS_PASSWORD" ssh -p "$VDS_PORT" $SSH_OPTS "$VDS_USER@$VDS_HOST" "
+            set -e
+            cd '$PROD_DIR'
+            git remote set-url origin https://github.com/$REPOSITORY.git
+            git fetch origin main
+            git reset --hard origin/main
+            if docker compose version >/dev/null 2>&1; then
+              COMPOSE='docker compose --env-file .env -p ozonprices_prod -f docker-compose.prod.yml'
+            else
+              COMPOSE='docker-compose --env-file .env -p ozonprices_prod -f docker-compose.prod.yml'
+            fi
+            \$COMPOSE build php nginx
+            \$COMPOSE up -d --no-build --remove-orphans
+            \$COMPOSE exec -T php composer install -n --no-dev --optimize-autoloader
+            \$COMPOSE exec -T php php artisan filament:assets
+            \$COMPOSE exec -T php php artisan migrate --force
+            \$COMPOSE exec -T php php artisan optimize:clear
+            \$COMPOSE exec -T php php artisan optimize
+            \$COMPOSE up -d --no-deps --force-recreate nginx worker scheduler
+          "

@@ -1,0 +1,98 @@
+version: "3.3"
+
+services:
+    nginx:
+        image: ozonprices-nginx
+        build:
+            context: ./docker/nginx
+        ports:
+            - "${NGINX_HOST}:${NGINX_PORT}:80"
+        volumes:
+            - ./:/var/www/ozon-prices
+        environment:
+            DOMAIN_NAME: ${DOMAIN_NAME}
+        depends_on:
+            - php
+        networks:
+            - ozon_prices_net
+
+    php:
+        image: ozonprices-php
+        env_file:
+            - .env
+        build:
+            context: .
+            dockerfile: docker/php/Dockerfile
+            args:
+                TIMEZONE: ${TIMEZONE}
+                UID: ${UID}
+                GID: ${GID}
+        user: "${UID}:${GID}"
+        environment:
+            APP_ENV: production
+            CHROME_PATH: ${CHROME_PATH}
+            PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+        volumes:
+            - ./:/var/www/ozon-prices
+            - ozon_browser_profile:${OZON_PROFILE_PATH}
+        depends_on:
+            - postgres
+        networks:
+            - ozon_prices_net
+
+    postgres:
+        image: postgres:${POSTGRES_VERSION}
+        ports:
+            - "${POSTGRES_HOST}:${POSTGRES_PORT}:5432"
+        environment:
+            POSTGRES_USER: ${POSTGRES_USER}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+            POSTGRES_DB: ${POSTGRES_DB}
+        volumes:
+            - postgres18_data:/var/lib/postgresql
+        networks:
+            - ozon_prices_net
+
+    worker:
+        image: ozonprices-php
+        env_file:
+            - .env
+        user: "${UID}:${GID}"
+        command: php artisan queue:work database --queue=default --sleep=3 --tries=1 --timeout=600
+        restart: unless-stopped
+        environment:
+            APP_ENV: production
+            CHROME_PATH: ${CHROME_PATH}
+            PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+        volumes:
+            - ./:/var/www/ozon-prices
+            - ozon_browser_profile:${OZON_PROFILE_PATH}
+        depends_on:
+            - postgres
+        networks:
+            - ozon_prices_net
+
+    scheduler:
+        image: ozonprices-php
+        env_file:
+            - .env
+        user: "${UID}:${GID}"
+        command: php artisan schedule:work
+        restart: unless-stopped
+        environment:
+            APP_ENV: production
+            CHROME_PATH: ${CHROME_PATH}
+            PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+        volumes:
+            - ./:/var/www/ozon-prices
+        depends_on:
+            - postgres
+        networks:
+            - ozon_prices_net
+
+volumes:
+    postgres18_data:
+    ozon_browser_profile:
+
+networks:
+    ozon_prices_net:

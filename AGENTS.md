@@ -57,7 +57,13 @@ docker compose --env-file .env up -d --no-build
 
 ## Docker Compose
 
-Основные сервисы:
+Compose-файлы разделены по окружениям:
+
+- `docker-compose.yml` - локальная разработка.
+- `docker-compose.test.yml` - изолированное окружение для CI и локальных тестов.
+- `docker-compose.prod.yml` - production compose для VDS/deploy.
+
+Основные dev/prod сервисы:
 
 - `nginx` - HTTP entrypoint, локально обычно `http://127.0.0.1:8080`
 - `php` - app container для artisan/test/manual commands
@@ -66,9 +72,32 @@ docker compose --env-file .env up -d --no-build
 - `scheduler` - `php artisan schedule:work`
 - `browser-login` - профиль для ручного логина в Ozon через noVNC
 
+Test compose содержит `php` и `postgres_test`; тестовые команды используют `.env.test`.
+
 PHP runtime image общий: `ozonprices-php`. Worker, scheduler и browser-login используют тот же image, чтобы не плодить разные сборки одного Dockerfile.
 
 PostgreSQL 18 хранит volume в `/var/lib/postgresql`, не меняй обратно на `/var/lib/postgresql/data`.
+
+## CI/CD
+
+- GitHub Actions CI: `.github/workflows/ci.yml`, запускается на push в `main` и pull request.
+- CI создает `.env` и `.env.test` из example-файлов, затем запускает `make test` и `make pint`.
+- Deploy: `.github/workflows/deploy.yml`, запускается вручную через `workflow_dispatch`.
+- Deploy создает production `.env` из GitHub Secrets, загружает его на VDS, обновляет `origin/main` и запускает `docker-compose.prod.yml`.
+- Не запускать deploy без прямого подтверждения пользователя.
+
+Текущая production-схема:
+
+- GitHub repo: `D1skord/OzonPriceMonitoring`.
+- Production domain: `pricemonitoring.vinichenko-ivan.ru`.
+- Верхний nginx на VDS проксирует `pricemonitoring.vinichenko-ivan.ru` и `www.pricemonitoring.vinichenko-ivan.ru` на `127.0.0.1:8083`.
+- GitHub secret `DOMAIN_NAME` должен быть `pricemonitoring.vinichenko-ivan.ru`.
+- GitHub secret `APP_URL` должен быть `https://pricemonitoring.vinichenko-ivan.ru`.
+- GitHub secret `NGINX_HOST` должен быть `127.0.0.1`.
+- GitHub secret `NGINX_PORT` должен быть `8083`.
+- GitHub secret `VDS_HOST` должен быть `82.146.43.174`.
+- Production deploy использует `docker-compose.prod.yml`.
+- На сервере может быть старый `docker-compose`, поэтому `docker-compose.prod.yml` держится совместимым с `version: "3.3"` и без `${VAR:-default}`.
 
 ## Архитектурные правила
 
@@ -100,8 +129,8 @@ PostgreSQL 18 хранит volume в `/var/lib/postgresql`, не меняй об
 ```bash
 docker compose --env-file .env exec -T php php artisan migrate --force
 docker compose --env-file .env exec -T php php artisan filament:assets
-docker compose --env-file .env exec -T php php artisan test
-docker compose --env-file .env exec -T php vendor/bin/pint --test
+docker compose --env-file .env.test -f docker-compose.test.yml exec -T php php artisan test
+docker compose --env-file .env.test -f docker-compose.test.yml exec -T php vendor/bin/pint --test
 ```
 
 Полезные smoke checks:

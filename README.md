@@ -13,7 +13,7 @@ MVP мониторинга цен Ozon wishlist через VK-бота.
 - Laravel database queue
 - VK Bot Long Poll
 - playwright-php/playwright
-- Docker Compose: `php`, `nginx`, `postgres`, `worker`, `scheduler`, optional `browser-login`
+- Docker Compose для dev/test/prod окружений
 
 ## Важное правило
 
@@ -30,6 +30,21 @@ docker compose --env-file .env exec -T php php artisan test
 ```bash
 make test
 ```
+
+## Окружения Docker Compose
+
+В проекте несколько compose-файлов, как отдельные входные точки для разных окружений:
+
+- `docker-compose.yml` - локальная разработка: `php`, `nginx`, `postgres`, `worker`, `scheduler`, optional `browser-login`;
+- `docker-compose.test.yml` - изолированные проверки и CI: `php`, `postgres_test`;
+- `docker-compose.prod.yml` - production: `php`, `nginx`, `postgres`, `worker`, `scheduler`.
+
+Env-файлы:
+
+- `.env.example` - пример локального dev-окружения;
+- `.env.test.example` - пример test-окружения;
+- `.env` и `.env.test` - локальные файлы, не коммитятся;
+- production `.env` создается deploy workflow из GitHub Secrets.
 
 ## Первый запуск
 
@@ -90,6 +105,112 @@ make down
 ```
 
 Не используй `docker compose down -v`, если не хочешь удалить PostgreSQL volume и сохраненный Ozon browser profile.
+
+## Тесты и CI
+
+Подготовить test env:
+
+```bash
+cp .env.test.example .env.test
+```
+
+Запустить тестовое окружение и проверки:
+
+```bash
+make test
+make pint
+```
+
+Остановить test-контейнеры:
+
+```bash
+make test-down
+```
+
+GitHub Actions workflow `.github/workflows/ci.yml` запускается на push в `main` и pull request. Он создает `.env` и `.env.test` из example-файлов, затем запускает `make test` и `make pint`.
+
+## Deploy
+
+Production deploy описан в `.github/workflows/deploy.yml` и запускается вручную через `workflow_dispatch`.
+
+Текущая production-схема:
+
+- GitHub repo: `D1skord/OzonPriceMonitoring`;
+- домен: `pricemonitoring.vinichenko-ivan.ru`;
+- верхний nginx на VDS принимает HTTP/HTTPS и проксирует на `127.0.0.1:8083`;
+- `docker-compose.prod.yml` поднимает внутренний nginx приложения на `NGINX_HOST:NGINX_PORT`;
+- для текущего сервера `NGINX_HOST=127.0.0.1`, `NGINX_PORT=8083`.
+
+Схема:
+
+1. GitHub Actions создает production `.env` из GitHub Secrets.
+2. `.env` загружается на VDS в `PROD_DIR`.
+3. На сервере репозиторий обновляется до `origin/main`.
+4. Запускается `docker-compose.prod.yml`.
+5. В контейнере `php` устанавливаются production Composer-зависимости, публикуются Filament assets, применяются миграции и оптимизируется Laravel cache.
+6. Пересоздаются `nginx`, `worker` и `scheduler`.
+
+Минимальный набор GitHub Secrets для deploy:
+
+```text
+APP_NAME
+APP_ENV
+APP_KEY
+APP_DEBUG
+APP_URL
+APP_TIMEZONE
+APP_LOCALE
+APP_FALLBACK_LOCALE
+APP_FAKER_LOCALE
+LOG_CHANNEL
+LOG_STACK
+LOG_LEVEL
+DB_CONNECTION
+DB_HOST
+DB_PORT
+DB_DATABASE
+DB_USERNAME
+DB_PASSWORD
+DB_SSLMODE
+SESSION_DRIVER
+SESSION_LIFETIME
+SESSION_ENCRYPT
+SESSION_PATH
+SESSION_DOMAIN
+BROADCAST_CONNECTION
+FILESYSTEM_DISK
+QUEUE_CONNECTION
+CACHE_STORE
+MAIL_MAILER
+VITE_APP_NAME
+UID
+GID
+TIMEZONE
+DOMAIN_NAME
+NGINX_HOST
+NGINX_PORT
+POSTGRES_HOST
+POSTGRES_PORT
+POSTGRES_VERSION
+POSTGRES_USER
+POSTGRES_PASSWORD
+POSTGRES_DB
+VK_BOT_TOKEN
+VK_GROUP_ID
+VK_API_VERSION
+VK_LONG_POLL_WAIT
+CRAWL_INTERVAL_MINUTES
+OZON_PROFILE_PATH
+CHROME_PATH
+PLAYWRIGHT_BROWSERS_PATH
+VDS_HOST
+VDS_USER
+VDS_PORT
+VDS_PASSWORD
+PROD_DIR
+```
+
+Deploy использует password-based SSH через `sshpass`. Если сервер будет переведен на SSH keys, workflow нужно обновить отдельно.
 
 ## Создание администратора
 

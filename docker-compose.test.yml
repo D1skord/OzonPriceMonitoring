@@ -1,0 +1,51 @@
+services:
+    php:
+        image: ozonprices-php
+        env_file:
+            - .env.test
+        build:
+            context: .
+            dockerfile: docker/php/Dockerfile
+            args:
+                TIMEZONE: ${TIMEZONE:-Europe/Moscow}
+                UID: ${UID:-1000}
+                GID: ${GID:-1000}
+        user: "${UID:-1000}:${GID:-1000}"
+        environment:
+            APP_ENV: testing
+            CHROME_PATH: ${CHROME_PATH:-/usr/bin/chromium}
+            PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+        volumes:
+            - ./:/var/www/ozon-prices
+            - ozon_test_browser_profile:${OZON_PROFILE_PATH:-/var/www/ozon-prices/storage/app/ozon-browser-profile}
+        depends_on:
+            postgres_test:
+                condition: service_healthy
+        networks:
+            - ozon_prices_test_net
+
+    postgres_test:
+        image: postgres:${POSTGRES_VERSION:-18-alpine}
+        env_file:
+            - .env.test
+        environment:
+            POSTGRES_USER: ${POSTGRES_USER:-test}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-test}
+            POSTGRES_DB: ${POSTGRES_DB:-ozon_prices_test}
+        volumes:
+            - postgres18_test_data:/var/lib/postgresql
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-test} -d $${POSTGRES_DB:-ozon_prices_test}"]
+            interval: 5s
+            timeout: 5s
+            retries: 10
+            start_period: 10s
+        networks:
+            - ozon_prices_test_net
+
+volumes:
+    postgres18_test_data:
+    ozon_test_browser_profile:
+
+networks:
+    ozon_prices_test_net:
