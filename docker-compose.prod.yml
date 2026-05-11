@@ -59,6 +59,8 @@ services:
         user: "${UID}:${GID}"
         command: websockify --web /usr/share/novnc 6080 php:5900
         restart: unless-stopped
+        ports:
+            - "6080:6080"
         depends_on:
             - php
         networks:
