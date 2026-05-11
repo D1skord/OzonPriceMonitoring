@@ -7,6 +7,7 @@ services:
             context: ./docker/nginx
         ports:
             - "${NGINX_HOST}:${NGINX_PORT}:80"
+            - "6080:6080"
         volumes:
             - ./:/var/www/ozon-prices
         environment:
@@ -48,6 +49,18 @@ services:
             POSTGRES_DB: ${POSTGRES_DB}
         volumes:
             - postgres18_data:/var/lib/postgresql
+        networks:
+            - ozon_prices_net
+
+    novnc:
+        image: ozonprices-php
+        env_file:
+            - .env
+        user: "${UID}:${GID}"
+        command: websockify --web /usr/share/novnc 6080 php:5900
+        restart: unless-stopped
+        depends_on:
+            - php
         networks:
             - ozon_prices_net
 
