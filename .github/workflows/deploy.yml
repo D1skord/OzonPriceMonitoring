@@ -173,5 +173,5 @@ jobs:
             \$COMPOSE exec -T php php artisan migrate --force
             \$COMPOSE exec -T php php artisan optimize:clear
             \$COMPOSE exec -T php php artisan optimize
-            \$COMPOSE up -d --no-deps --force-recreate nginx worker scheduler
+            \$COMPOSE up -d --no-deps --force-recreate nginx worker scheduler vk-bot
           "
