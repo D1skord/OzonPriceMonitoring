@@ -7,7 +7,6 @@ services:
             context: ./docker/nginx
         ports:
             - "${NGINX_HOST}:${NGINX_PORT}:80"
-            - "6080:6080"
         volumes:
             - ./:/var/www/ozon-prices
         environment:
