@@ -173,6 +173,8 @@ jobs:
             \$COMPOSE up -d --no-build --remove-orphans
             \$COMPOSE exec -T php git config --global --add safe.directory /var/www/ozon-prices
             \$COMPOSE exec -T php composer install -n --no-dev --optimize-autoloader
+            \$COMPOSE exec -T php vendor/bin/playwright-install --browsers
+            \$COMPOSE exec -T -u root php sh -lc \"mkdir -p '\$OZON_PROFILE_PATH' && chown -R '\$APP_UID:\$APP_GID' '\$OZON_PROFILE_PATH'\"
             \$COMPOSE exec -T php npm install
             \$COMPOSE exec -T php npm run build
             \$COMPOSE exec -T php php artisan filament:assets
