@@ -20,6 +20,14 @@ final class OzonWishlistCrawler
             'CRAWLER_HEADLESS' => $headless ? '1' : '0',
         ];
 
+        $proxyServer = config('services.ozon.proxy_server');
+
+        if (is_string($proxyServer) && $proxyServer !== '') {
+            $environment['OZON_PROXY_SERVER'] = $proxyServer;
+            $environment['OZON_PROXY_USERNAME'] = (string) config('services.ozon.proxy_username');
+            $environment['OZON_PROXY_PASSWORD'] = (string) config('services.ozon.proxy_password');
+        }
+
         if (! $headless) {
             $command = [
                 'bash',

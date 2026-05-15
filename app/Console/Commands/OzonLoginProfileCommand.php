@@ -14,7 +14,6 @@ final class OzonLoginProfileCommand extends Command
     public function handle(): int
     {
         $profilePath = (string) config('services.ozon.profile_path');
-        $chromePath = (string) config('services.ozon.chrome_path');
 
         if (! is_dir($profilePath)) {
             mkdir($profilePath, 0775, true);
@@ -30,13 +29,22 @@ final class OzonLoginProfileCommand extends Command
 
         $this->info('Open noVNC and log in to Ozon. Stop this command after login is complete.');
 
+        $environment = [
+            'OZON_PROFILE_PATH' => $profilePath,
+            'DISPLAY' => getenv('DISPLAY') ?: ':99',
+        ];
+        $proxyServer = config('services.ozon.proxy_server');
+
+        if (is_string($proxyServer) && $proxyServer !== '') {
+            $environment['OZON_PROXY_SERVER'] = $proxyServer;
+            $environment['OZON_PROXY_USERNAME'] = (string) config('services.ozon.proxy_username');
+            $environment['OZON_PROXY_PASSWORD'] = (string) config('services.ozon.proxy_password');
+        }
+
         $process = new Process([
-            $chromePath,
-            '--no-sandbox',
-            '--disable-dev-shm-usage',
-            '--user-data-dir='.$profilePath,
-            'https://www.ozon.ru/my/favorites',
-        ]);
+            'node',
+            base_path('resources/playwright/ozon-login-profile.mjs'),
+        ], base_path(), $environment);
         $process->setTimeout(null);
         $process->run(function (string $type, string $buffer): void {
             $this->output->write($buffer);

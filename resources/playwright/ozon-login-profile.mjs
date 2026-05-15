@@ -4,15 +4,8 @@ import { mkdir, rm } from 'node:fs/promises';
 const require = createRequire(import.meta.url);
 const { chromium } = require('../../vendor/playwright-php/playwright/bin/node_modules/playwright');
 
-const url = process.env.OZON_WISHLIST_URL;
 const profilePath = process.env.OZON_PROFILE_PATH;
-const headless = process.env.CRAWLER_HEADLESS !== '0';
 const proxyServer = process.env.OZON_PROXY_SERVER;
-
-if (!url) {
-  console.error('OZON_WISHLIST_URL is required.');
-  process.exit(2);
-}
 
 if (!profilePath) {
   console.error('OZON_PROFILE_PATH is required.');
@@ -20,9 +13,9 @@ if (!profilePath) {
 }
 
 const launchOptions = {
-  headless,
+  headless: false,
   locale: 'ru-RU',
-  viewport: { width: 1440, height: 1200 },
+  viewport: { width: 1440, height: 900 },
   args: [
     '--no-sandbox',
     '--disable-dev-shm-usage',
@@ -54,29 +47,15 @@ const context = await chromium.launchPersistentContext(profilePath, launchOption
 try {
   const page = await context.newPage();
 
-  await page.goto(url, {
+  await page.goto('https://www.ozon.ru/my/favorites', {
     waitUntil: 'domcontentloaded',
     timeout: 90000,
   });
 
-  await page.waitForTimeout(3000);
-
-  let previousHeight = 0;
-
-  for (let i = 0; i < 8; i += 1) {
-    const height = await page.evaluate(() => document.body.scrollHeight);
-
-    if (height === previousHeight && i > 1) {
-      break;
-    }
-
-    previousHeight = height;
-
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await page.waitForTimeout(800);
-  }
-
-  process.stdout.write(await page.content());
+  await new Promise((resolve) => {
+    process.once('SIGINT', resolve);
+    process.once('SIGTERM', resolve);
+  });
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;

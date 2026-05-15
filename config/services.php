@@ -49,6 +49,9 @@ return [
     'ozon' => [
         'profile_path' => env('OZON_PROFILE_PATH', storage_path('app/ozon-browser-profile')),
         'chrome_path' => env('CHROME_PATH', '/usr/bin/chromium'),
+        'proxy_server' => env('OZON_PROXY_SERVER'),
+        'proxy_username' => env('OZON_PROXY_USERNAME'),
+        'proxy_password' => env('OZON_PROXY_PASSWORD'),
     ],
 
 ];
