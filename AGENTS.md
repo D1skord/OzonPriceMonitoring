@@ -78,6 +78,128 @@ PHP runtime image общий: `ozonprices-php`. Worker, scheduler и browser-log
 
 PostgreSQL 18 хранит volume в `/var/lib/postgresql`, не меняй обратно на `/var/lib/postgresql/data`.
 
+## Production deployment flow (from local to production)
+
+### Пошаговый флоу раскатки фичи на production
+
+**1. Локальная разработка и проверки:**
+```bash
+git status --short --branch           # убедиться что worktree чист
+# ... сделать изменения в коде ...
+make check                          # typecheck + tests + build
+```
+
+**2. Коммит и пуш:**
+```bash
+git add <changed-files>
+git commit -m "описание изменений"
+git push origin main
+```
+
+**3. Дождаться зеленого CI:**
+```bash
+gh run list --repo D1skord/OzonPriceMonitoring --workflow ci --limit 3
+```
+
+**4. Запустить deploy через GitHub Actions:**
+```bash
+gh workflow run deploy --repo D1skord/OzonPriceMonitoring
+gh run list --repo D1skord/OzonPriceMonitoring --workflow deploy --limit 3
+```
+
+**5. Проверить что прод поднялся:**
+```bash
+# На сервере:
+docker ps --format 'table {{.Names}}\t{{.Status}}' | grep ozonprices_prod
+
+# Удаленно:
+curl -sI https://pricemonitoring.vinichenko-ivan.ru/
+curl -sI https://pricemonitoring.vinichenko-ivan.ru/admin/login
+```
+
+### Контейнеры production
+
+| Контейнер | Команда | Описание |
+|-----------|---------|----------|
+| nginx | - | Проксирует 8083→80 |
+| php | - | PHP-FPM |
+| postgres | - | База данных |
+| worker | `queue:work` | Обрабатывает jobs (парсинг Ozon) |
+| scheduler | `schedule:work` | Каждую минуту запускает `wishlists:dispatch-due` |
+| vk-bot | `vk:listen` | Long Poll для VK Bot |
+
+### Production путь на сервере
+
+```
+/var/www/vinichenko/data/www/pricemonitoring.vinichenko-ivan.ru/
+```
+
+### Проверка логов проде
+
+```bash
+# На сервере:
+docker logs ozonprices_prod_worker_1 --tail=20
+docker logs ozonprices_prod_scheduler_1 --tail=20
+docker logs ozonprices_prod_vk-bot_1 --tail=20
+docker logs ozonprices_prod_php_1 --tail=20
+```
+
+## Авторизация в Ozon через браузер (для парсинга)
+
+Озон блокирует серверные IP (VDS/дата-центр). Для авторизации нужен доступ к браузеру с "домашним" IP.
+
+### Запуск VNC-сессии для авторизации
+
+**1. Поднять noVNC и браузер:**
+```bash
+# На сервере:
+cd /var/www/vinichenko/data/www/pricemonitoring.vinichenko-ivan.ru
+
+# Пересобрать образ с актуальным кодом (если нужно):
+docker-compose --env-file .env -p ozonprices_prod -f docker-compose.prod.yml build php nginx
+
+# Запустить все сервисы включая novnc:
+docker-compose --env-file .env -p ozonprices_prod -f docker-compose.prod.yml up -d
+
+# Запустить Xvfb (виртуальный дисплей):
+docker exec -d ozonprices_prod_php_1 sh -c 'Xvfb :99 -screen 0 1920x1080x24 > /tmp/xvfb.log 2>&1'
+
+# Запустить x11vnc (VNC сервер на порт 5900):
+docker exec -d ozonprices_prod_php_1 sh -c 'x11vnc -display :99 -nopw -forever -bg -rfbport 5900'
+
+# Запустить Chromium с профилем Ozon:
+docker exec -d ozonprices_prod_php_1 sh -c 'DISPLAY=:99 /usr/bin/chromium --no-sandbox --disable-dev-shm-usage --user-data-dir=/var/www/ozon-prices/storage/app/ozon-browser-profile https://www.ozon.ru/my/favorites > /tmp/chromium.log 2>&1'
+
+# Запустить noVNC (прокси VNC→WebSocket на порту 6080):
+docker exec -d ozonprices_prod_php_1 sh -c 'websockify --web /usr/share/novnc 6080 localhost:5900 > /tmp/novnc.log 2>&1'
+```
+
+**2. Открыть в браузере:**
+```
+http://82.146.43.174:6080/vnc.html
+```
+Нажать Connect, авторизоваться в Ozon.
+
+**3. После авторизации — остановить VNC:**
+```bash
+# На сервере:
+docker exec ozonprices_prod_php_1 sh -c 'pkill -9 x11vnc; pkill -9 chromium; pkill -9 Xvfb; pkill -9 websockify'
+docker-compose --env-file .env -p ozonprices_prod -f docker-compose.prod.yml stop novnc
+```
+
+### Профиль браузера Ozon
+
+```
+/var/www/vinichenko/data/www/pricemonitoring.vinichenko-ivan.ru/storage/app/ozon-browser-profile/
+```
+
+Путь настраивается через `OZON_PROFILE_PATH` в `.env`.
+
+### Ограничения
+
+- Ozon блокирует IP дата-центров/VPS. Если браузер открывается но Ozon блокирует — нужен residential proxy или VPN.
+- Chromium запускается с флагами `--no-sandbox --disable-dev-shm-usage` внутри контейнера.
+
 ## CI/CD
 
 - GitHub Actions CI: `.github/workflows/ci.yml`, запускается на push в `main` и pull request.
