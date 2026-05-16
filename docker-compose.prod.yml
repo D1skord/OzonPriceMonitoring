@@ -51,17 +51,25 @@ services:
         networks:
             - ozon_prices_net
 
-    novnc:
+    browser-login:
         image: ozonprices-php
         env_file:
             - .env
         user: "${UID}:${GID}"
-        command: websockify --web /usr/share/novnc 6080 php:5900
-        restart: unless-stopped
+        command: bash docker/browser-login/start.sh
         ports:
             - "6080:6080"
-        depends_on:
-            - php
+        tmpfs:
+            - /tmp/.X11-unix:mode=1777
+        environment:
+            APP_ENV: production
+            DISPLAY: :99
+            CHROME_PATH: ${CHROME_PATH}
+            PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+            OZONE_PLATFORM: x11
+        volumes:
+            - ./:/var/www/ozon-prices
+            - ozon_browser_profile:${OZON_PROFILE_PATH}
         networks:
             - ozon_prices_net
 

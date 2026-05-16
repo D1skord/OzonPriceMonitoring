@@ -146,7 +146,7 @@ docker logs ozonprices_prod_php_1 --tail=20
 
 ## Авторизация в Ozon через браузер (для парсинга)
 
-Озон блокирует серверные IP (VDS/дата-центр). Для авторизации нужен доступ к браузеру с "домашним" IP.
+Для авторизации используется отдельный `browser-login` service. Он поднимает noVNC, Xvfb, x11vnc и обычный Chromium с общим Docker volume `ozon_browser_profile`. Ручной логин не запускается через Playwright.
 
 ### Запуск VNC-сессии для авторизации
 
@@ -155,23 +155,7 @@ docker logs ozonprices_prod_php_1 --tail=20
 # На сервере:
 cd /var/www/vinichenko/data/www/pricemonitoring.vinichenko-ivan.ru
 
-# Пересобрать образ с актуальным кодом (если нужно):
-docker-compose --env-file .env -p ozonprices_prod -f docker-compose.prod.yml build php nginx
-
-# Запустить все сервисы включая novnc:
-docker-compose --env-file .env -p ozonprices_prod -f docker-compose.prod.yml up -d
-
-# Запустить Xvfb (виртуальный дисплей):
-docker exec -d ozonprices_prod_php_1 sh -c 'Xvfb :99 -screen 0 1920x1080x24 > /tmp/xvfb.log 2>&1'
-
-# Запустить x11vnc (VNC сервер на порт 5900):
-docker exec -d ozonprices_prod_php_1 sh -c 'x11vnc -display :99 -nopw -forever -bg -rfbport 5900'
-
-# Запустить Chromium с профилем Ozon:
-docker exec -d ozonprices_prod_php_1 sh -c 'DISPLAY=:99 /usr/bin/chromium --no-sandbox --disable-dev-shm-usage --user-data-dir=/var/www/ozon-prices/storage/app/ozon-browser-profile https://www.ozon.ru/my/favorites > /tmp/chromium.log 2>&1'
-
-# Запустить noVNC (прокси VNC→WebSocket на порту 6080):
-docker exec -d ozonprices_prod_php_1 sh -c 'websockify --web /usr/share/novnc 6080 localhost:5900 > /tmp/novnc.log 2>&1'
+docker-compose --env-file .env -p ozonprices_prod -f docker-compose.prod.yml up -d --no-build browser-login
 ```
 
 **2. Открыть в браузере:**
@@ -183,8 +167,7 @@ http://82.146.43.174:6080/vnc.html
 **3. После авторизации — остановить VNC:**
 ```bash
 # На сервере:
-docker exec ozonprices_prod_php_1 sh -c 'pkill -9 x11vnc; pkill -9 chromium; pkill -9 Xvfb; pkill -9 websockify'
-docker-compose --env-file .env -p ozonprices_prod -f docker-compose.prod.yml stop novnc
+docker-compose --env-file .env -p ozonprices_prod -f docker-compose.prod.yml stop browser-login
 ```
 
 ### Профиль браузера Ozon
@@ -195,10 +178,14 @@ docker-compose --env-file .env -p ozonprices_prod -f docker-compose.prod.yml sto
 
 Путь настраивается через `OZON_PROFILE_PATH` в `.env`.
 
-### Ограничения
+### Ограничения и диагностика
 
-- Ozon блокирует IP дата-центров/VPS. Если браузер открывается но Ozon блокирует — нужен residential proxy или VPN.
 - Chromium запускается с флагами `--no-sandbox --disable-dev-shm-usage` внутри контейнера.
+- Если `6080` занят или открывается не тот браузер, проверь:
+
+```bash
+docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+```
 
 ## CI/CD
 

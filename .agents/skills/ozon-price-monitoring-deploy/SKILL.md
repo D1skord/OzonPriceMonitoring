@@ -26,7 +26,8 @@ description: Use when working in the Ozon Price Monitoring project and the user 
 - Production project path: `/var/www/vinichenko/data/www/pricemonitoring.vinichenko-ivan.ru`.
 - Production deploy использует `docker-compose.prod.yml`.
 - На сервере старый `docker-compose` (не `docker compose`), поэтому всегда используй `docker-compose`.
-- Контейнеры: `nginx`, `php`, `postgres`, `worker`, `scheduler`, `vk-bot`.
+- Основные контейнеры: `nginx`, `php`, `postgres`, `worker`, `scheduler`, `vk-bot`.
+- `browser-login` - временный контейнер для ручной авторизации Ozon через noVNC, deploy workflow его не поднимает и останавливает перед выкладкой.
 
 ## Flow
 
@@ -62,6 +63,31 @@ description: Use when working in the Ozon Price Monitoring project and the user 
 | worker | `queue:work` | Обрабатывает jobs (парсинг) |
 | scheduler | `schedule:work` | Запускает `wishlists:dispatch-due` каждую минуту |
 | vk-bot | `vk:listen` | Long Poll для VK Bot |
+| browser-login | `bash docker/browser-login/start.sh` | Временный noVNC + обычный Chromium для ручного входа в Ozon |
+
+## Ozon Browser Login
+
+Для ручной авторизации в Ozon не запускай браузер в `php` контейнере через `docker exec` и не используй `php artisan ozon:login-profile`.
+
+Правильный production flow:
+
+```bash
+ssh root@82.146.43.174
+cd /var/www/vinichenko/data/www/pricemonitoring.vinichenko-ivan.ru
+docker-compose --env-file .env -p ozonprices_prod -f docker-compose.prod.yml up -d --no-build browser-login
+```
+
+Открыть:
+
+```text
+http://82.146.43.174:6080/vnc.html
+```
+
+После успешного входа закрыть внешний доступ:
+
+```bash
+docker-compose --env-file .env -p ozonprices_prod -f docker-compose.prod.yml stop browser-login
+```
 
 ## Отчет пользователю
 

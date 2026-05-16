@@ -170,7 +170,8 @@ jobs:
               COMPOSE='docker-compose --env-file .env -p ozonprices_prod -f docker-compose.prod.yml'
             fi
             \$COMPOSE build php nginx
-            \$COMPOSE up -d --no-build --remove-orphans
+            \$COMPOSE stop browser-login >/dev/null 2>&1 || true
+            \$COMPOSE up -d --no-build --remove-orphans nginx php postgres worker scheduler vk-bot
             \$COMPOSE exec -T php git config --global --add safe.directory /var/www/ozon-prices
             \$COMPOSE exec -T php composer install -n --no-dev --optimize-autoloader
             \$COMPOSE exec -T php vendor/bin/playwright-install --browsers
