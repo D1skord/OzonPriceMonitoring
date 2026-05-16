@@ -163,6 +163,11 @@ jobs:
             git reset --hard origin/main
             APP_UID=\$(awk -F= '\$1 == \"UID\" { print \$2 }' .env)
             APP_GID=\$(awk -F= '\$1 == \"GID\" { print \$2 }' .env)
+            OZON_PROFILE_PATH_VALUE=\$(awk -F= '\$1 == \"OZON_PROFILE_PATH\" { gsub(/^\"|\"$/, \"\", \$2); print \$2 }' .env)
+            if [ -z \"\$OZON_PROFILE_PATH_VALUE\" ]; then
+              echo 'OZON_PROFILE_PATH is empty'
+              exit 1
+            fi
             chown -R \"\$APP_UID:\$APP_GID\" .
             if docker compose version >/dev/null 2>&1 && docker compose --help 2>/dev/null | grep -q -- '--env-file'; then
               COMPOSE='docker compose --env-file .env -p ozonprices_prod -f docker-compose.prod.yml'
@@ -175,7 +180,7 @@ jobs:
             \$COMPOSE exec -T php git config --global --add safe.directory /var/www/ozon-prices
             \$COMPOSE exec -T php composer install -n --no-dev --optimize-autoloader
             \$COMPOSE exec -T php vendor/bin/playwright-install --browsers
-            \$COMPOSE exec -T -u root php sh -lc \"mkdir -p '\$OZON_PROFILE_PATH' && chown -R '\$APP_UID:\$APP_GID' '\$OZON_PROFILE_PATH'\"
+            \$COMPOSE exec -T -u root php sh -lc \"mkdir -p '\$OZON_PROFILE_PATH_VALUE' && chown -R '\$APP_UID:\$APP_GID' '\$OZON_PROFILE_PATH_VALUE'\"
             \$COMPOSE exec -T php npm install
             \$COMPOSE exec -T php npm run build
             \$COMPOSE exec -T php php artisan filament:assets
