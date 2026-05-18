@@ -11,9 +11,14 @@ final class UserProductStatsController
         $userProduct->load('product');
         $snapshots = $userProduct->priceSnapshots()->oldest('captured_at')->get();
 
+        $chartSeries = $snapshots->map(fn ($s) => [
+            'x' => $s->captured_at->getTimestampMs(),
+            'y' => round($s->price_minor / 100, 2),
+        ])->values();
+
         return view('stats.user-product', [
             'userProduct' => $userProduct,
-            'snapshots' => $snapshots,
+            'chartSeries' => $chartSeries,
         ]);
     }
 }
