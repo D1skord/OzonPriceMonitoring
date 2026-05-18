@@ -4,12 +4,26 @@ namespace App\Services\Vk;
 
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 final class VkBotClient
 {
+    public function isEnabled(): bool
+    {
+        $token = config('services.vk.bot_token');
+
+        return is_string($token) && $token !== '';
+    }
+
     public function sendMessage(int $peerId, string $message): ?string
     {
+        if (! $this->isEnabled()) {
+            Log::channel('single')->info('[VK stub] sendMessage', ['peer_id' => $peerId, 'message' => $message]);
+
+            return null;
+        }
+
         $response = $this->client()->post('messages.send', [
             'peer_id' => $peerId,
             'message' => $message,

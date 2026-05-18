@@ -15,6 +15,12 @@ final class VkListenCommand extends Command
 
     public function handle(VkBotClient $client, VkBotMessageHandler $handler): int
     {
+        if (! $client->isEnabled()) {
+            $this->warn('VK_BOT_TOKEN is not set — vk:listen is disabled in this environment.');
+
+            return self::SUCCESS;
+        }
+
         $server = $client->getLongPollServer();
 
         while (true) {
