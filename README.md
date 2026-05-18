@@ -256,6 +256,14 @@ make vk-listen
 docker compose --env-file .env exec php php artisan vk:listen
 ```
 
+Для локальной разработки без реального VK-бота доступен веб-эмулятор чата:
+
+```
+http://localhost/dev/vk-chat
+```
+
+Работает только при `APP_ENV=local`. Позволяет отправлять команды боту прямо из браузера без VK-токена.
+
 Поддерживаемые команды бота:
 
 - `/start`

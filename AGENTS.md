@@ -65,7 +65,7 @@ Compose-файлы разделены по окружениям:
 
 Основные dev/prod сервисы:
 
-- `nginx` - HTTP entrypoint, локально обычно `http://127.0.0.1:8080`
+- `nginx` - HTTP entrypoint, локально `http://localhost` (порт 80 в `.env`)
 - `php` - app container для artisan/test/manual commands
 - `postgres` - PostgreSQL
 - `worker` - `php artisan queue:work database`

@@ -1,3 +1,4 @@
+/.claude/worktrees
 /.phpunit.cache
 /bootstrap/cache/*.php
 /node_modules
