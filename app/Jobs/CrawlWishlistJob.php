@@ -78,12 +78,9 @@ final class CrawlWishlistJob implements ShouldQueue
         $userProduct = $alert->userProduct;
         $statsUrl = route('stats.user-product', $userProduct);
         $shortTitle = \Illuminate\Support\Str::limit($userProduct->title, 45, '…');
-        $titleLine = $userProduct->canonical_url
-            ? '['.$userProduct->canonical_url.'|'.$shortTitle.']'
-            : $shortTitle;
         $message = implode("\n", [
             'Новый исторический минимум:',
-            $titleLine,
+            $shortTitle,
             'Цена: '.$moneyFormatter->rubles($alert->new_price_minor),
             'Было минимум: '.$moneyFormatter->rubles((int) $alert->previous_min_price_minor),
             'Статистика: '.$statsUrl,

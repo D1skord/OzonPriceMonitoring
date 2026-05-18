@@ -90,10 +90,11 @@ final class VkBotMessageHandler
 
         foreach ($items as $item) {
             $price = $item->current_price_minor !== null ? $this->moneyFormatter->rubles($item->current_price_minor) : 'цена неизвестна';
-            $title = $item->canonical_url
-                ? '['.$item->canonical_url.'|'.$this->shortTitle($item->title).']'
-                : $this->shortTitle($item->title);
-            $blocks[] = $title.' — '.$price;
+            $block = $this->shortTitle($item->title).' — '.$price;
+            if ($item->canonical_url) {
+                $block .= "\n".$item->canonical_url;
+            }
+            $blocks[] = $block;
         }
 
         $blocks[] = 'Подробная статистика: /item ID';
@@ -113,11 +114,8 @@ final class VkBotMessageHandler
         }
 
         $snapshots = $item->priceSnapshots()->latest('captured_at')->limit(5)->get();
-        $titleLine = $item->canonical_url
-            ? '['.$item->canonical_url.'|'.$this->shortTitle($item->title).']'
-            : $this->shortTitle($item->title);
         $lines = [
-            $titleLine,
+            $this->shortTitle($item->title),
             'Текущая цена: '.($item->current_price_minor !== null ? $this->moneyFormatter->rubles($item->current_price_minor) : 'неизвестно'),
             'Исторический минимум: '.($item->historical_min_price_minor !== null ? $this->moneyFormatter->rubles($item->historical_min_price_minor) : 'неизвестно'),
             'График: '.route('stats.user-product', $item),
