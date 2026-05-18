@@ -129,9 +129,13 @@ final class VkBotMessageHandler
         return implode("\n", $lines);
     }
 
-    private function shortTitle(string $title, int $limit = 45): string
+    private function shortTitle(string $title, int $length = 40): string
     {
-        return Str::limit($title, $limit, '…');
+        $truncated = mb_strlen($title) > $length
+            ? mb_substr($title, 0, $length - 1).'…'
+            : $title;
+
+        return mb_str_pad($truncated, $length);
     }
 
     private function extractWishlistUrl(string $text): ?string

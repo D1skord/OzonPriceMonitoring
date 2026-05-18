@@ -77,7 +77,10 @@ final class CrawlWishlistJob implements ShouldQueue
         $alert->loadMissing('user', 'userProduct');
         $userProduct = $alert->userProduct;
         $statsUrl = route('stats.user-product', $userProduct);
-        $shortTitle = \Illuminate\Support\Str::limit($userProduct->title, 45, '…');
+        $raw = mb_strlen($userProduct->title) > 40
+            ? mb_substr($userProduct->title, 0, 39).'…'
+            : $userProduct->title;
+        $shortTitle = mb_str_pad($raw, 40);
         $message = implode("\n", [
             'Новый исторический минимум:',
             $shortTitle,
