@@ -35,6 +35,7 @@ services:
         volumes:
             - ./:/var/www/ozon-prices
             - ozon_browser_profile:${OZON_PROFILE_PATH}
+            - ms_playwright:/ms-playwright
         depends_on:
             - postgres
         networks:
@@ -70,6 +71,7 @@ services:
         volumes:
             - ./:/var/www/ozon-prices
             - ozon_browser_profile:${OZON_PROFILE_PATH}
+            - ms_playwright:/ms-playwright
         networks:
             - ozon_prices_net
 
@@ -87,6 +89,7 @@ services:
         volumes:
             - ./:/var/www/ozon-prices
             - ozon_browser_profile:${OZON_PROFILE_PATH}
+            - ms_playwright:/ms-playwright
         depends_on:
             - postgres
         networks:
@@ -129,6 +132,7 @@ services:
 volumes:
     postgres18_data:
     ozon_browser_profile:
+    ms_playwright:
 
 networks:
     ozon_prices_net:

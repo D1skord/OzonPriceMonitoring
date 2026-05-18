@@ -73,7 +73,13 @@ final class VkBotMessageHandler
             ->get();
 
         if ($items->isEmpty()) {
-            return 'Активных товаров пока нет. Пришли ссылку на Ozon wishlist.';
+            $hasWishlist = $user->wishlists()->where('is_active', true)->exists();
+
+            if ($hasWishlist) {
+                return 'Wishlist привязан, но товары ещё не загружены. Подожди несколько минут — идёт первый обход.';
+            }
+
+            return 'Активных товаров нет. Пришли ссылку на Ozon wishlist.';
         }
 
         $lines = ['Твои товары:'];

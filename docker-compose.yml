@@ -30,6 +30,7 @@ services:
         volumes:
             - ./:/var/www/ozon-prices
             - ozon_browser_profile:${OZON_PROFILE_PATH:-/var/www/ozon-prices/storage/app/ozon-browser-profile}
+            - ms_playwright:/ms-playwright
         depends_on:
             postgres:
                 condition: service_healthy
@@ -66,6 +67,7 @@ services:
         volumes:
             - ./:/var/www/ozon-prices
             - ozon_browser_profile:${OZON_PROFILE_PATH:-/var/www/ozon-prices/storage/app/ozon-browser-profile}
+            - ms_playwright:/ms-playwright
         depends_on:
             postgres:
                 condition: service_healthy
@@ -105,6 +107,7 @@ services:
         volumes:
             - ./:/var/www/ozon-prices
             - ozon_browser_profile:${OZON_PROFILE_PATH:-/var/www/ozon-prices/storage/app/ozon-browser-profile}
+            - ms_playwright:/ms-playwright
         depends_on:
             postgres:
                 condition: service_healthy
@@ -114,6 +117,7 @@ services:
 volumes:
     postgres18_data:
     ozon_browser_profile:
+    ms_playwright:
 
 networks:
     ozon_prices_net:
