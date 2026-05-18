@@ -131,11 +131,9 @@ final class VkBotMessageHandler
 
     private function shortTitle(string $title, int $length = 40): string
     {
-        $truncated = mb_strlen($title) > $length
+        return mb_strlen($title) > $length
             ? mb_substr($title, 0, $length - 1).'…'
             : $title;
-
-        return mb_str_pad($truncated, $length);
     }
 
     private function extractWishlistUrl(string $text): ?string
