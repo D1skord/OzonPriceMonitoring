@@ -8,6 +8,7 @@ use App\Models\UserProduct;
 use App\Services\MoneyFormatter;
 use App\Services\WishlistSyncService;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Str;
 
 final class VkBotMessageHandler
 {
@@ -58,7 +59,10 @@ final class VkBotMessageHandler
             $wishlist = $this->wishlistSyncService->bindWishlist($user, $wishlistUrl);
             Bus::dispatch(new CrawlWishlistJob($wishlist->id));
 
-            return 'Wishlist привязан. Первый обход создаст baseline без алертов.';
+            return implode("\n\n", [
+                'Вишлист подключён! Загружаю товары — это займёт пару минут.',
+                'Первые цены зафиксирую без уведомлений, чтобы не присылать сразу всё. Уведомления начнут приходить со следующего обхода.',
+            ]);
         }
 
         return 'Не понял сообщение. Пришли ссылку на Ozon wishlist или команду /help.';
@@ -76,22 +80,25 @@ final class VkBotMessageHandler
             $hasWishlist = $user->wishlists()->where('is_active', true)->exists();
 
             if ($hasWishlist) {
-                return 'Wishlist привязан, но товары ещё не загружены. Подожди несколько минут — идёт первый обход.';
+                return 'Вишлист подключён, но товары ещё не загружены. Подожди пару минут — идёт первый обход.';
             }
 
             return 'Активных товаров нет. Пришли ссылку на Ozon wishlist.';
         }
 
-        $lines = ['Твои товары:'];
+        $blocks = ['Твои товары ('.$items->count().')'];
 
         foreach ($items as $item) {
             $price = $item->current_price_minor !== null ? $this->moneyFormatter->rubles($item->current_price_minor) : 'цена неизвестна';
-            $lines[] = '#'.$item->id.' '.$price.' - '.$item->title;
+            $title = $item->canonical_url
+                ? '['.$item->canonical_url.'|'.$this->shortTitle($item->title).']'
+                : $this->shortTitle($item->title);
+            $blocks[] = $title.' — '.$price;
         }
 
-        $lines[] = 'Для статистики: /item ID';
+        $blocks[] = 'Подробная статистика: /item ID';
 
-        return implode("\n", $lines);
+        return implode("\n\n", $blocks);
     }
 
     private function itemMessage(User $user, int $id): string
@@ -106,8 +113,11 @@ final class VkBotMessageHandler
         }
 
         $snapshots = $item->priceSnapshots()->latest('captured_at')->limit(5)->get();
+        $titleLine = $item->canonical_url
+            ? '['.$item->canonical_url.'|'.$this->shortTitle($item->title).']'
+            : $this->shortTitle($item->title);
         $lines = [
-            $item->title,
+            $titleLine,
             'Текущая цена: '.($item->current_price_minor !== null ? $this->moneyFormatter->rubles($item->current_price_minor) : 'неизвестно'),
             'Исторический минимум: '.($item->historical_min_price_minor !== null ? $this->moneyFormatter->rubles($item->historical_min_price_minor) : 'неизвестно'),
             'График: '.route('stats.user-product', $item),
@@ -119,6 +129,11 @@ final class VkBotMessageHandler
         }
 
         return implode("\n", $lines);
+    }
+
+    private function shortTitle(string $title, int $limit = 45): string
+    {
+        return Str::limit($title, $limit, '…');
     }
 
     private function extractWishlistUrl(string $text): ?string

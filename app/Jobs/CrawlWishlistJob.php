@@ -76,13 +76,17 @@ final class CrawlWishlistJob implements ShouldQueue
     {
         $alert->loadMissing('user', 'userProduct');
         $userProduct = $alert->userProduct;
-        $url = route('stats.user-product', $userProduct);
+        $statsUrl = route('stats.user-product', $userProduct);
+        $shortTitle = \Illuminate\Support\Str::limit($userProduct->title, 45, '…');
+        $titleLine = $userProduct->canonical_url
+            ? '['.$userProduct->canonical_url.'|'.$shortTitle.']'
+            : $shortTitle;
         $message = implode("\n", [
             'Новый исторический минимум:',
-            $userProduct->title,
+            $titleLine,
             'Цена: '.$moneyFormatter->rubles($alert->new_price_minor),
             'Было минимум: '.$moneyFormatter->rubles((int) $alert->previous_min_price_minor),
-            'Статистика: '.$url,
+            'Статистика: '.$statsUrl,
         ]);
 
         $messageId = $vkBotClient->sendMessage((int) $alert->user->vk_peer_id, $message);
