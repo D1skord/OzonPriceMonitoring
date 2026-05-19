@@ -44,6 +44,7 @@ return [
 
     'crawl' => [
         'interval_minutes' => env('CRAWL_INTERVAL_MINUTES', 15),
+        'min_alert_drop_percent' => env('MIN_ALERT_DROP_PERCENT', 1.0),
     ],
 
     'ozon' => [

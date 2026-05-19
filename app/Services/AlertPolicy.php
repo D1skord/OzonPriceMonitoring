@@ -8,9 +8,22 @@ use App\Models\UserProduct;
 
 final class AlertPolicy
 {
+    private readonly float $minDropPercent;
+
+    public function __construct(?float $minDropPercent = null)
+    {
+        $this->minDropPercent = max(0.0, $minDropPercent ?? (float) config('services.crawl.min_alert_drop_percent', 0.0));
+    }
+
     public function createHistoricalMinAlert(UserProduct $userProduct, PriceSnapshot $snapshot, ?int $previousMin): ?Alert
     {
-        if ($previousMin === null || $snapshot->price_minor >= $previousMin) {
+        if ($previousMin === null || $previousMin <= 0 || $snapshot->price_minor >= $previousMin) {
+            return null;
+        }
+
+        $dropPercent = ($previousMin - $snapshot->price_minor) / $previousMin * 100;
+
+        if ($dropPercent < $this->minDropPercent) {
             return null;
         }
 

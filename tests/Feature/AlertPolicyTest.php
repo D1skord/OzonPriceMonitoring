@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Alert;
 use App\Models\PriceSnapshot;
 use App\Models\Product;
 use App\Models\User;
@@ -14,6 +15,13 @@ use Tests\TestCase;
 final class AlertPolicyTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config()->set('services.crawl.min_alert_drop_percent', 1.0);
+    }
 
     public function test_creates_alert_only_for_strict_historical_minimum(): void
     {
@@ -31,6 +39,50 @@ final class AlertPolicyTest extends TestCase
 
         $this->assertNull(app(AlertPolicy::class)->createHistoricalMinAlert($userProduct, $snapshot, null));
         $this->assertNull(app(AlertPolicy::class)->createHistoricalMinAlert($userProduct, $snapshot, 499000));
+    }
+
+    public function test_does_not_create_alert_when_drop_below_threshold(): void
+    {
+        // Падение 1000 / 500000 = 0.2%, ниже порога 1%
+        [$userProduct, $snapshot] = $this->snapshot(499000);
+
+        $alert = app(AlertPolicy::class)->createHistoricalMinAlert($userProduct, $snapshot, 500000);
+
+        $this->assertNull($alert);
+        $this->assertSame(0, Alert::query()->count());
+    }
+
+    public function test_creates_alert_when_drop_meets_threshold(): void
+    {
+        // Падение ровно 1% от 500000 = 5000
+        [$userProduct, $snapshot] = $this->snapshot(495000);
+
+        $alert = app(AlertPolicy::class)->createHistoricalMinAlert($userProduct, $snapshot, 500000);
+
+        $this->assertNotNull($alert);
+        $this->assertSame(495000, $alert->new_price_minor);
+    }
+
+    public function test_creates_alert_when_drop_exceeds_threshold(): void
+    {
+        // Падение 5% от 500000
+        [$userProduct, $snapshot] = $this->snapshot(475000);
+
+        $alert = app(AlertPolicy::class)->createHistoricalMinAlert($userProduct, $snapshot, 500000);
+
+        $this->assertNotNull($alert);
+        $this->assertSame(475000, $alert->new_price_minor);
+    }
+
+    public function test_zero_threshold_creates_alert_for_any_drop(): void
+    {
+        config()->set('services.crawl.min_alert_drop_percent', 0.0);
+
+        [$userProduct, $snapshot] = $this->snapshot(499900);
+
+        $alert = app(AlertPolicy::class)->createHistoricalMinAlert($userProduct, $snapshot, 500000);
+
+        $this->assertNotNull($alert);
     }
 
     /**
