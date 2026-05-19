@@ -76,19 +76,33 @@ final class CrawlWishlistJob implements ShouldQueue
     {
         $alert->loadMissing('user', 'userProduct');
         $userProduct = $alert->userProduct;
-        $statsUrl = route('stats.user-product', $userProduct);
-        $shortTitle = mb_strlen($userProduct->title) > 40
-            ? mb_substr($userProduct->title, 0, 39).'…'
-            : $userProduct->title;
-        $message = implode("\n", [
-            'Новый исторический минимум:',
-            $shortTitle,
-            'Цена: '.$moneyFormatter->rubles($alert->new_price_minor),
-            'Было минимум: '.$moneyFormatter->rubles((int) $alert->previous_min_price_minor),
-            'Статистика: '.$statsUrl,
-        ]);
 
-        $messageId = $vkBotClient->sendMessage((int) $alert->user->vk_peer_id, $message);
+        $shortTitle = mb_strlen($userProduct->title) > 60
+            ? mb_substr($userProduct->title, 0, 59).'…'
+            : $userProduct->title;
+
+        $newPrice = $alert->new_price_minor;
+        $prevMin = (int) $alert->previous_min_price_minor;
+        $drop = $moneyFormatter->rubles($prevMin - $newPrice);
+
+        $lines = [
+            'Новый исторический минимум цены!',
+            '',
+            $shortTitle,
+            '',
+            'Цена сейчас:  '.$moneyFormatter->rubles($newPrice),
+            'Был минимум:  '.$moneyFormatter->rubles($prevMin),
+            'Снизилась на: '.$drop,
+        ];
+
+        if ($userProduct->canonical_url) {
+            $lines[] = '';
+            $lines[] = 'Открыть в Ozon: '.$userProduct->canonical_url;
+        }
+
+        $lines[] = 'График цен: '.route('stats.user-product', $userProduct);
+
+        $messageId = $vkBotClient->sendMessage((int) $alert->user->vk_peer_id, implode("\n", $lines));
 
         $alert->update([
             'sent_at' => now(),
