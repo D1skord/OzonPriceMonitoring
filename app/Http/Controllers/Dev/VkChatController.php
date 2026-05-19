@@ -6,10 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Services\Vk\VkBotMessageHandler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class VkChatController extends Controller
 {
-    public function index(): \Illuminate\View\View
+    public function index(): View
     {
         abort_unless(app()->isLocal(), 404);
 

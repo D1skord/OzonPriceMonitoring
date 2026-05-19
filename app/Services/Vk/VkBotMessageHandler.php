@@ -8,7 +8,6 @@ use App\Models\UserProduct;
 use App\Services\MoneyFormatter;
 use App\Services\WishlistSyncService;
 use Illuminate\Support\Facades\Bus;
-use Illuminate\Support\Str;
 
 final class VkBotMessageHandler
 {
