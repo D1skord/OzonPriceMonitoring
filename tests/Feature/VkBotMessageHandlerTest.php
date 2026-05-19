@@ -27,7 +27,7 @@ final class VkBotMessageHandlerTest extends TestCase
 
         $message = app(VkBotMessageHandler::class)->handle(10, 20, 'https://ozon.ru/t/1EMSVNf');
 
-        $this->assertStringContainsString('Wishlist привязан', $message);
+        $this->assertStringContainsString('Вишлист подключён', $message);
         $this->assertDatabaseHas('wishlists', [
             'url' => 'https://ozon.ru/t/1EMSVNf',
             'is_active' => true,
@@ -41,6 +41,6 @@ final class VkBotMessageHandlerTest extends TestCase
 
         $message = app(VkBotMessageHandler::class)->handle(10, 20, 'Мои товары');
 
-        $this->assertStringContainsString('Активных товаров пока нет', $message);
+        $this->assertStringContainsString('Активных товаров нет', $message);
     }
 }
